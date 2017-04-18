@@ -25,8 +25,8 @@
  */
 package pl.asie.classcachetweaker;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
+//import com.google.common.collect.ImmutableSet;
+//import com.google.common.collect.Lists;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.LaunchClassLoader;
@@ -35,25 +35,30 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
+import java.util.*;
+
+import org.eclipse.collections.impl.set.immutable.*;
+import org.eclipse.collections.impl.set.mutable.*;
+import org.eclipse.collections.api.set.*;
 
 /**
  * Created by asie on 3/9/17.
  */
 public class ClassCacheTweaker implements ITweaker {
-	private static final Set<String> INCOMPATIBLE_TRANSFORMER_PREFIXES = ImmutableSet.of("elec332.");
-	private static final Set<String> INCOMPATIBLE_TRANSFORMER_SUFFIXES = ImmutableSet.of("fml.common.asm.transformers.ModAPITransformer");
+	private static final ImmutableSet<String> INCOMPATIBLE_TRANSFORMER_PREFIXES = new UnifiedSet(Arrays.asList("elec332.")).toImmutable();//UnifiedSet 1 array 1 int, Guava 2 array 2 int
+	private static final ImmutableSet<String> INCOMPATIBLE_TRANSFORMER_SUFFIXES = new UnifiedSet(Arrays.asList("fml.common.asm.transformers.ModAPITransformer")).toImmutable();
 
 	public static ClassCache cache;
 	private LaunchClassLoader classLoader;
 	private File gameDir;
 
 	@Override
-	public void acceptOptions(List<String> args, File gameDir, File assetsDir, String profile) {
+	public void acceptOptions(final List<String> args, final File gameDir, final File assetsDir, final String profile) {
 		this.gameDir = gameDir;
 	}
 
 	@Override
-	public void injectIntoClassLoader(LaunchClassLoader classLoader) {
+	public void injectIntoClassLoader(final LaunchClassLoader classLoader) {
 		this.classLoader = classLoader;
 	}
 
@@ -77,8 +82,8 @@ public class ClassCacheTweaker implements ITweaker {
 
 			List<IClassTransformer> transformerList = (List<IClassTransformer>) transformersField.get(classLoader);
 
-			List<IClassTransformer> capturedTransformerList = Lists.newArrayList();
-			List<IClassTransformer> preservedTransformerList = Lists.newArrayList();
+			List<IClassTransformer> capturedTransformerList = new ArrayList();
+			List<IClassTransformer> preservedTransformerList = new ArrayList();
 
 			for (IClassTransformer transformer : transformerList) {
 				String className = transformer.getClass().getName();

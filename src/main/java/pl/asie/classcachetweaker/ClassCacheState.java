@@ -25,7 +25,7 @@
  */
 package pl.asie.classcachetweaker;
 
-import com.google.common.collect.Lists;
+//import com.google.common.collect.Lists;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Comparator;
 import java.util.List;
+import java.util.*;
 
 public class ClassCacheState {
 	private static class FileState {
@@ -41,7 +42,7 @@ public class ClassCacheState {
 		private long time;
 		private long size;
 
-		private FileState(File file) {
+		private FileState(final File file) {
 			try {
 				this.path = file.getCanonicalPath();
 			} catch (IOException e) {
@@ -53,7 +54,7 @@ public class ClassCacheState {
 			// System.out.println("- " + path);
 		}
 
-		public void append(MessageDigest md) {
+		public void append(final MessageDigest md) {
 			md.update(path.getBytes());
 
 			buffer.putLong(0, time);
@@ -64,16 +65,16 @@ public class ClassCacheState {
 
 	private static byte[] data = null;
 
-	public static byte[] generate(File gameDir) {
+	public static byte[] generate(final File gameDir) {
 		if (data != null)
 			return data;
 
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			List<FileState> stateList = Lists.newArrayList();
+			List<FileState> stateList = new ArrayList();
 			addFile(stateList, new File(gameDir, "mods"), 0);
 			addFile(stateList, new File(gameDir, "modList.json"), 0);
-			stateList.sort(Comparator.comparing(state -> state.path));
+			Collections.sort(stateList, new Comparator<FileState>() {@Override public int compare(FileState o1, FileState o2) {return o1.path.compareTo(o2.path);}});
 			for (FileState state : stateList) {
 				state.append(md);
 			}
@@ -85,7 +86,7 @@ public class ClassCacheState {
 		return data;
 	}
 
-	private static void addFile(List<FileState> stateList, File file, int depth) {
+	private static void addFile(final List<FileState> stateList, final File file, int depth) {
 		if (depth > 16) {
 			throw new RuntimeException("depth too high");
 		}

@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.io.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
@@ -52,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.Manifest;
+
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 
 public class ClassCache implements Serializable {
 	public static final int CURRENT_VERSION = 3;
@@ -70,6 +73,7 @@ public class ClassCache implements Serializable {
 			PACKAGES_TMP = ClassLoader.class.getDeclaredField("packages");
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		PACKAGES = PACKAGES_TMP;
@@ -81,6 +85,7 @@ public class ClassCache implements Serializable {
 			CACHED_CLASSES_TMP = LaunchClassLoader.class.getDeclaredField("cachedClasses");
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		CACHED_CLASSES = CACHED_CLASSES_TMP;
@@ -92,6 +97,7 @@ public class ClassCache implements Serializable {
 			MANIFESTS_TMP = LaunchClassLoader.class.getDeclaredField("packageManifests");
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		MANIFESTS = MANIFESTS_TMP;
@@ -103,6 +109,7 @@ public class ClassCache implements Serializable {
 			SEAL_BASE_TMP = Package.class.getDeclaredField("sealBase");
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		SEAL_BASE = SEAL_BASE_TMP;
@@ -116,6 +123,7 @@ public class ClassCache implements Serializable {
 			DEFINE_PACKAGE_TMP = MethodHandles.lookup().unreflect(m);
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		DEFINE_PACKAGE = DEFINE_PACKAGE_TMP;
@@ -128,6 +136,7 @@ public class ClassCache implements Serializable {
 			DEFINE_CLASS_TMP = MethodHandles.lookup().unreflect(m);
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		DEFINE_CLASS = DEFINE_CLASS_TMP;
@@ -140,11 +149,12 @@ public class ClassCache implements Serializable {
 	private transient Thread saveThread;
 	private transient Runnable saveRunnable;
 	private transient boolean dirty;
+	private transient int count = 100;
 
-	private Map<String, byte[]> classMap = new HashMap<>();
-	protected Map<String, CodeSource> codeSourceMap = new HashMap<>();
+	private Map<String, byte[]> classMap = new UnifiedMap();
+	protected Map<String, CodeSource> codeSourceMap = new UnifiedMap();
 
-	public static ClassCache load(LaunchClassLoader classLoader, File gameDir) throws IOException, IllegalAccessException, ClassNotFoundException {
+	public static ClassCache load(final LaunchClassLoader classLoader, final File gameDir) throws IOException, IllegalAccessException, ClassNotFoundException {
 		File classCacheFile = new File(gameDir, "classCache.dat");
 		ClassCache cache = new ClassCache();
 
@@ -152,7 +162,7 @@ public class ClassCache implements Serializable {
 		cache.classCacheFileTmp = new File(classCacheFile.getAbsolutePath() + "_tmp");
 		cache.classLoader = classLoader;
 		cache.gameDir = gameDir;
-
+		
 		if (cache.classCacheFileTmp.exists()) {
 			cache.classCacheFileTmp.delete();
 		}
@@ -168,9 +178,9 @@ public class ClassCache implements Serializable {
 			boolean loaded = false;
 
 			try {
-				FileInputStream fileInputStream = new FileInputStream(classCacheFile);
-				DataInputStream dataInputStream = new DataInputStream(fileInputStream);
-				ObjectInputStream objectInputStream = new ObjectInputStream(dataInputStream);
+				try (FileInputStream fileInputStream = new FileInputStream(classCacheFile)) {
+				try (DataInputStream dataInputStream = new DataInputStream(fileInputStream)) {
+				try (ObjectInputStream objectInputStream = new ObjectInputStream(dataInputStream)) {
 				int version = dataInputStream.readInt();
 				if (version != CURRENT_VERSION) {
 					throw new IOException("Invalid ClassCache.dat version!");
@@ -198,6 +208,7 @@ public class ClassCache implements Serializable {
 						// this means we already have that Package
 					} catch (Exception e) {
 						e.printStackTrace();
+						cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 					}
 				}
 
@@ -217,13 +228,14 @@ public class ClassCache implements Serializable {
 					}
 				}
 
-				objectInputStream.close();
-				dataInputStream.close();
-				fileInputStream.close();
+				}//objectInputStream.close();
+				}//dataInputStream.close();
+				}//fileInputStream.close();
 
 				loaded = true;
 			} catch (Throwable t) {
 				t.printStackTrace();
+				cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, t, "ClassCacheTweaker stacktrace: %s", t);
 				cache = new ClassCache();
 
 				cache.classCacheFile = classCacheFile;
@@ -237,19 +249,13 @@ public class ClassCache implements Serializable {
 		cache.saveRunnable = new Runnable() {
 			@Override
 			public void run() {
-				while (true) {
-					if (cache1.dirty) {
-						cache1.save();
-						cache1.dirty = false;
-					} else {
-						break;
-					}
+				while (cache1.dirty) {
+					cache1.save();
+					cache1.dirty = false;
 
 					try {
 						Thread.sleep(5000);
-					} catch (InterruptedException e) {
-
-					}
+					} catch (InterruptedException e) {}
 				}
 			}
 		};
@@ -265,11 +271,18 @@ public class ClassCache implements Serializable {
 			classMap.put(transformedName, data);
 		}
 
+		//18.04.17
+		//Each call method add?
+		//Reduce IO, the idea: can get rid of the full cycle of rewriting to the disk cluster, this will reduce its wear
+		if (count==100) {
+		count=0;
 		dirty = true;
 		if (saveThread == null || !saveThread.isAlive()) {
 			saveThread = new Thread(saveRunnable);
 			saveThread.start();
 		}
+		}
+		count++;
 	}
 
 	private static void writeNullableUTF(DataOutputStream stream, String s) throws IOException {
@@ -289,9 +302,9 @@ public class ClassCache implements Serializable {
 
 	private void save() {
 		try {
-			FileOutputStream fileOutputStream = new FileOutputStream(classCacheFileTmp);
-			DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream);
-			ObjectOutputStream objectOutputStream = new ObjectOutputStream(dataOutputStream);
+			try (FileOutputStream fileOutputStream = new FileOutputStream(classCacheFileTmp)) {
+			try (DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream)) {
+			try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(dataOutputStream)){
 
 			dataOutputStream.writeInt(CURRENT_VERSION); // version
 
@@ -332,7 +345,9 @@ public class ClassCache implements Serializable {
 
 					boolean shouldWrite = true;
 					if (src != null) {
-						String loc = src.getLocation().toString();
+						URL loc_nullable = src.getLocation();
+						if (loc_nullable==null) continue;
+						String loc = loc_nullable.toString();
 						shouldWrite = !loc.startsWith("file:") || !loc.endsWith(".class");
 					}
 
@@ -350,16 +365,17 @@ public class ClassCache implements Serializable {
 				}
 			}
 
-			objectOutputStream.close();
+			}//objectOutputStream.close();
 			dataOutputStream.flush();
-			dataOutputStream.close();
+			}//dataOutputStream.close();
 			fileOutputStream.flush();
-			fileOutputStream.close();
+			}//fileOutputStream.close();
 
 			classCacheFile.delete();
 			classCacheFileTmp.renameTo(classCacheFile);
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 	}
 

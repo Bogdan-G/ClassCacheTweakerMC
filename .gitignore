@@ -1,0 +1,5 @@
+*.db
+/build/*
+/.gradle/*
+/libs/*
+symlink_libs.bat

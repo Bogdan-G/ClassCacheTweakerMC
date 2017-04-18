@@ -40,13 +40,13 @@ public class ClassCacheConcurrentHashMap extends ConcurrentHashMap<String, Class
 	private final LaunchClassLoader classLoader;
 	private boolean isInside;
 
-	public ClassCacheConcurrentHashMap(ClassCache cache, LaunchClassLoader classLoader) {
+	public ClassCacheConcurrentHashMap(final ClassCache cache, final LaunchClassLoader classLoader) {
 		this.cache = cache;
 		this.classLoader = classLoader;
 	}
 
 	@Override
-	public Class<?> get(Object key) {
+	public Class<?> get(final Object key) {
 		if (isInside) {
 			return super.get(key);
 		}
@@ -67,6 +67,7 @@ public class ClassCacheConcurrentHashMap extends ConcurrentHashMap<String, Class
 					super.put((String) key, c);
 				} catch (Throwable t) {
 					t.printStackTrace();
+					cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, t, "ClassCacheTweaker stacktrace: %s", t);
 				}
 				output = c;
 			}
@@ -88,7 +89,7 @@ public class ClassCacheConcurrentHashMap extends ConcurrentHashMap<String, Class
 		return output;
 	}
 
-	public Class<?> getReal(String key) {
+	public Class<?> getReal(final String key) {
 		return super.get(key);
 	}
 }

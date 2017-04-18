@@ -33,12 +33,12 @@ import java.util.List;
 public class ClassCacheTransformer implements IClassTransformer {
 	private final List<IClassTransformer> transformerList;
 
-	public ClassCacheTransformer(List<IClassTransformer> transformerList, File gameDir) {
+	public ClassCacheTransformer(final List<IClassTransformer> transformerList, final File gameDir) {
 		this.transformerList = transformerList;
 	}
 
 	@Override
-	public byte[] transform(String name, String transformedName, byte[] basicClass) {
+	public byte[] transform(final String name, String transformedName, byte[] basicClass) {
 		byte[] data = ClassCacheTweaker.cache.get(transformedName);
 		if (data != null) {
 			return data;
