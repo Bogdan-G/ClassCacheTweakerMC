@@ -254,7 +254,7 @@ public class ClassCache implements Serializable {
 					cache1.dirty = false;
 
 					try {
-						Thread.sleep(5000);
+						Thread.sleep(30000);//5000->30000
 					} catch (InterruptedException e) {}
 				}
 			}
@@ -275,12 +275,12 @@ public class ClassCache implements Serializable {
 		//Each call method add?
 		//Reduce IO, the idea: can get rid of the full cycle of rewriting to the disk cluster, this will reduce its wear
 		if (count==100) {
-		count=0;
-		dirty = true;
-		if (saveThread == null || !saveThread.isAlive()) {
-			saveThread = new Thread(saveRunnable);
-			saveThread.start();
-		}
+			count=0;
+			dirty = true;
+			if (saveThread == null || !saveThread.isAlive()) {
+				saveThread = new Thread(saveRunnable);
+				saveThread.start();
+			}
 		}
 		count++;
 	}
@@ -346,9 +346,13 @@ public class ClassCache implements Serializable {
 					boolean shouldWrite = true;
 					if (src != null) {
 						URL loc_nullable = src.getLocation();
-						if (loc_nullable==null) continue;
-						String loc = loc_nullable.toString();
-						shouldWrite = !loc.startsWith("file:") || !loc.endsWith(".class");
+						if (loc_nullable!=null) {
+							String loc = loc_nullable.toString();
+							shouldWrite = !loc.startsWith("file:") || !loc.endsWith(".class");
+						} else {
+							dataOutputStream.writeBoolean(false);
+							continue;
+						}
 					}
 
 					dataOutputStream.writeBoolean(shouldWrite);
