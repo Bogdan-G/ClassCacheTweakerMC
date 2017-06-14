@@ -25,9 +25,12 @@
  */
 package pl.asie.classcachetweaker;
 
+import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 import org.lwjgl.Sys;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -46,6 +49,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.SecureClassLoader;
+import java.util.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -174,8 +178,8 @@ public class ClassCache implements Serializable {
 			CACHED_CLASSES.set(classLoader, cachedClasses);
 		}
 
+		boolean loaded = false;
 		if (classCacheFile.exists()) {
-			boolean loaded = false;
 
 			try {
 				try (FileInputStream fileInputStream = new FileInputStream(classCacheFile)) {
@@ -243,6 +247,16 @@ public class ClassCache implements Serializable {
 				cache.classLoader = classLoader;
 				cache.gameDir = gameDir;
 			}
+		}
+
+		if (!loaded && !((boolean) Launch.blackboard.get("fml.deobfuscatedEnvironment"))) {
+			String ws = "Please note that ClassCacheTweaker is UNSUPPORTED and has a high chance to\n** BREAK YOUR MODPACK IN STRANGE WAYS **!\nPlease only use it if you KNOW WHAT YOU ARE DOING!";
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, "%s", ws);
+
+			try {
+			if (!GraphicsEnvironment.isHeadless()) {
+				JOptionPane.showMessageDialog(new JFrame(), ws, "ClassCacheTweaker Warning", JOptionPane.WARNING_MESSAGE);
+			}} catch (Throwable t) {cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, t, "ClassCacheTweaker stacktrace: %s", t);}
 		}
 
 		final ClassCache cache1 = cache;
@@ -313,9 +327,10 @@ public class ClassCache implements Serializable {
 			dataOutputStream.write(stateData);
 
 			Map<String, Package> packageMap = (Map<String, Package>) PACKAGES.get(classLoader);
+			Set<Package> packages = new HashSet(packageMap.values());
 
-			dataOutputStream.writeInt(packageMap.values().size());
-			for (Package pkg : packageMap.values()) {
+			dataOutputStream.writeInt(packages.size());
+			for (Package pkg : packages) {
 				writeNullableUTF(dataOutputStream, pkg.getName());
 				writeNullableUTF(dataOutputStream, pkg.getImplementationTitle());
 				writeNullableUTF(dataOutputStream, pkg.getImplementationVendor());

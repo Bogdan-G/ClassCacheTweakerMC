@@ -31,6 +31,7 @@ import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 
+import java.io.*;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -41,12 +42,9 @@ import org.eclipse.collections.impl.set.immutable.*;
 import org.eclipse.collections.impl.set.mutable.*;
 import org.eclipse.collections.api.set.*;
 
-/**
- * Created by asie on 3/9/17.
- */
 public class ClassCacheTweaker implements ITweaker {
-	private static final ImmutableSet<String> INCOMPATIBLE_TRANSFORMER_PREFIXES = new UnifiedSet(Arrays.asList("elec332.")).toImmutable();//UnifiedSet 1 array 1 int, Guava 2 array 2 int
-	private static final ImmutableSet<String> INCOMPATIBLE_TRANSFORMER_SUFFIXES = new UnifiedSet(Arrays.asList("fml.common.asm.transformers.ModAPITransformer")).toImmutable();
+	private static final UnifiedSet<String> INCOMPATIBLE_TRANSFORMER_PREFIXES = new UnifiedSet(Arrays.asList(new String[]{"elec332.", "me.nallar.modpatcher.", "net.darkhax."}));//UnifiedSet 1 array 1 int, Guava 2 array 2 int // add net.darkhax. - issue in all the mods 2 modpack in 1.11.2
+	private static final UnifiedSet<String> INCOMPATIBLE_TRANSFORMER_SUFFIXES = new UnifiedSet(Arrays.asList("fml.common.asm.transformers.ModAPITransformer"));
 
 	public static ClassCache cache;
 	private LaunchClassLoader classLoader;
@@ -69,6 +67,56 @@ public class ClassCacheTweaker implements ITweaker {
 
 	@Override
 	public String[] getLaunchArguments() {
+		// have to do this by hand because i do not wish to rely on the stability of FML's configuration API
+		File file = new File(new File(gameDir, "config"), "classCacheTweaker.cfg");
+		file.getParentFile().mkdirs();
+
+		Map<String, String> config = new HashMap<>();
+		config.put("incompatibleTransformerPrefixes", "");
+		config.put("incompatibleTransformerSuffixes", "");
+
+		try {
+			byte[] bd = new byte[(int)file.length()];
+        		InputStream fis  = new BufferedInputStream(new FileInputStream(file));
+        		fis.read(bd);
+        		ByteArrayInputStream bis = new ByteArrayInputStream(bd);
+        		BufferedReader br = new BufferedReader(new InputStreamReader(bis, "UTF-8"));
+        		String line = new String(new byte[0], "UTF-8");
+        		while((line = br.readLine()) != null) {
+				String[] data = line.split("=", 2);
+				if (data.length == 2) {
+					config.put(data[0].trim(), data[1].trim());
+				}
+        		}
+        		br.close();
+        		bis.close();
+        		fis.close();
+		} catch (FileNotFoundException e) {
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			StringBuilder builder = new StringBuilder();
+			for (Map.Entry<String, String> entry : config.entrySet()) {
+				builder.append(entry.getKey() + "=" + entry.getValue() + "\n");
+			}
+			byte[] bd = (builder.toString()).getBytes("UTF-8");
+        		OutputStream fos0 = new FileOutputStream(file);
+        		OutputStream fos = new BufferedOutputStream(fos0);
+        		fos.write(bd);
+        		fos.flush();
+        		fos0.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		for (String s : config.get("incompatibleTransformerPrefixes").split(";"))
+			INCOMPATIBLE_TRANSFORMER_PREFIXES.add(s);
+		for (String s : config.get("incompatibleTransformerSuffixes").split(";"))
+			INCOMPATIBLE_TRANSFORMER_SUFFIXES.add(s);
+
 		try {
 			cache = ClassCache.load(classLoader, gameDir);
 		} catch (Exception e) {
