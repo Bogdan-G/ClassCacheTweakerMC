@@ -253,10 +253,11 @@ public class ClassCache implements Serializable {
 			String ws = "Please note that ClassCacheTweaker is UNSUPPORTED and has a high chance to\n** BREAK YOUR MODPACK IN STRANGE WAYS **!\nPlease only use it if you KNOW WHAT YOU ARE DOING!";
 			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, "%s", ws);
 
-			try {
+			//off
+			/*try {
 			if (!GraphicsEnvironment.isHeadless()) {
 				JOptionPane.showMessageDialog(new JFrame(), ws, "ClassCacheTweaker Warning", JOptionPane.WARNING_MESSAGE);
-			}} catch (Throwable t) {cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, t, "ClassCacheTweaker stacktrace: %s", t);}
+			}} catch (Throwable t) {cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, t, "ClassCacheTweaker stacktrace: %s", t);}*/
 		}
 
 		final ClassCache cache1 = cache;
