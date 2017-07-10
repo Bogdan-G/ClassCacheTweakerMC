@@ -42,8 +42,12 @@ import org.eclipse.collections.impl.set.immutable.*;
 import org.eclipse.collections.impl.set.mutable.*;
 import org.eclipse.collections.api.set.*;
 
+import cpw.mods.fml.common.*;
+import cpw.mods.fml.common.eventhandler.*;
+import cpw.mods.fml.common.event.*;
+
 public class ClassCacheTweaker implements ITweaker {
-	private static final UnifiedSet<String> INCOMPATIBLE_TRANSFORMER_PREFIXES = new UnifiedSet(Arrays.asList(new String[]{"elec332.", "me.nallar.modpatcher.", "net.darkhax."}));//UnifiedSet 1 array 1 int, Guava 2 array 2 int // add net.darkhax. - issue in all the mods 2 modpack in 1.11.2
+	private static final UnifiedSet<String> INCOMPATIBLE_TRANSFORMER_PREFIXES = new UnifiedSet(Arrays.asList(new String[]{"elec332.", "me.nallar.modpatcher.", "net.darkhax.", "ru.fewizz.idextender."}));//UnifiedSet 1 array 1 int, Guava 2 array 2 int // add net.darkhax. - issue in all the mods 2 modpack in 1.11.2
 	private static final UnifiedSet<String> INCOMPATIBLE_TRANSFORMER_SUFFIXES = new UnifiedSet(Arrays.asList("fml.common.asm.transformers.ModAPITransformer"));
 
 	public static ClassCache cache;
@@ -91,10 +95,9 @@ public class ClassCacheTweaker implements ITweaker {
         		br.close();
         		bis.close();
         		fis.close();
-		} catch (FileNotFoundException e) {
-
 		} catch (IOException e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		try {
@@ -110,6 +113,7 @@ public class ClassCacheTweaker implements ITweaker {
         		fos0.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+			cpw.mods.fml.common.FMLLog.log(org.apache.logging.log4j.Level.WARN, (Throwable)e, "ClassCacheTweaker stacktrace: %s", (Throwable)e);
 		}
 
 		for (String s : config.get("incompatibleTransformerPrefixes").split(";"))
@@ -166,5 +170,10 @@ public class ClassCacheTweaker implements ITweaker {
 			throw new RuntimeException(e);
 		}
 		return new String[0];
+	}
+
+	@Mod.EventHandler
+	public void load(FMLInitializationEvent event) {
+		FMLCommonHandler.instance().bus().register(cache);
 	}
 }

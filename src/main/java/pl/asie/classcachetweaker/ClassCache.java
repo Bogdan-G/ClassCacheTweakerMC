@@ -60,6 +60,10 @@ import java.util.jar.Manifest;
 
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 
+import cpw.mods.fml.common.*;
+import cpw.mods.fml.common.eventhandler.*;
+import cpw.mods.fml.common.gameevent.*;
+
 public class ClassCache implements Serializable {
 	public static final int CURRENT_VERSION = 3;
 
@@ -154,6 +158,7 @@ public class ClassCache implements Serializable {
 	private transient Runnable saveRunnable;
 	private transient boolean dirty;
 	private transient int count = 100;
+	private transient boolean NoProcessEnterInWorld = true;
 
 	private Map<String, byte[]> classMap = new UnifiedMap();
 	protected Map<String, CodeSource> codeSourceMap = new UnifiedMap();
@@ -289,7 +294,7 @@ public class ClassCache implements Serializable {
 		//18.04.17
 		//Each call method add?
 		//Reduce IO, the idea: can get rid of the full cycle of rewriting to the disk cluster, this will reduce its wear
-		if (count==100) {
+		if (NoProcessEnterInWorld && count==100) {
 			count=0;
 			dirty = true;
 			if (saveThread == null || !saveThread.isAlive()) {
@@ -405,5 +410,10 @@ public class ClassCache implements Serializable {
 
     public void remove(final Object key) {
 	    classMap.remove(key);
+    }
+
+    @SubscribeEvent
+    public void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event) {
+        NoProcessEnterInWorld = false;
     }
 }
